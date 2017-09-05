@@ -1,0 +1,16 @@
+Hackathon
+
+C/ Arduino
+ - Relógio giratório de LED's
+ - Carrinho telecomandado
+ 
+ 
+C/ Raspberry Pi
+ - iVaso & myPlant (vaso inteligente e app) - sensor de humidade, motor
+ 
+S/ Arduino
+ - Sistema GPS
+ 
+ 
+ 
+ 
