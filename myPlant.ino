@@ -15,6 +15,12 @@
 #define D6_pin 6
 #define D7_pin 7
 
+
+/**
+   Light sensor, connected to the Analog Pin #2,, ranging from 0 to 1023 (10 bits)
+*/
+int lightSensorPin = 2;
+
 /**
    Humidity sensor, connected to the Analog Pin #1, ranging from 0 to 1023 (10 bits)
 */
@@ -31,9 +37,14 @@ int relePin = 1;
 int buttonPin = 4;
 
 /**
-   Variable containing the value from analogRal(humiditySensorPin)
+   Variable containing the value from analogRead(humiditySensorPin)
 */
 int humidityValue;
+
+/**
+   Variable containing the value from analogRead(lightSensorPin)
+*/
+int lightValue;
 
 /**
    Represents the number of 50ms cycles the water bomb will be activated
@@ -63,42 +74,29 @@ int lcdUpdateTimer = 100;
 /**
    humidityValue converted to %
 */
-double percentage;
+double humidityPercentage;
+
+
 
 void setup() {
-  pinMode(rele, OUTPUT);
+  pinMode(relePin, OUTPUT);
 }
 
 void loop() {
 
   humidityValue = analogRead(humiditySensorPin);
+  lightValue = analogRead(lightSensorPin);
   buttonstate = digitalRead(buttonPin);
-  percentage = (humitystate * 100) / 1023;
-
+  humidityPercentage = (humidityValue * 100) / 1023;
+  lightPercentage = (lightValue * 100) / 1023);
+  
   if (buttonState == 0) {
 
-    // checkIfBombNeedsToBeActivated(humidityValue, waterBombActivationTimer, minimumDelayBetweenBombActivationTimer, releaux);
     checkIfBombNeedsToBeActivated();
 
-    /**
-       Updates the LCD every 5 seconds (10 50ms cycles)
-    */
-    if (lcdUpdateTimer = 0) { // atualizar valor mostrador
+    lcdUpdate();
 
-      LCD.begin(16, 2); //resolução do mostrador
-      lcd.setCursor(0, 0); //início
-      lcd.write("Humidade: ",  percentage);
-
-      lcdUpdateTimer = 100;
-    }
-
-    /**
-       Deactivates the water bomb if the 1.5 seconds timer reaches 0 and the bomb is activated
-    */
-    if ((waterBombActivationTimer == 0) && (releaux == 1)) {
-      digitalWrite(relePin, LOW);
-      releaux = 0;
-    }
+    deactivateBomb();
 
     delay(50);
 
@@ -107,8 +105,7 @@ void loop() {
 
   } else { // Manual water bomb activation
 
-    digitalWrite(relePin, HIGH);
-    releaux = 1;
+    activateBomb();
 
   }
 
@@ -118,9 +115,8 @@ void loop() {
    Activates the water bomb if the humidity percentage goes below 70% (717/1023 = 70%), the bomb is deactivated, the rele is deactivated and the count timer is 0
 */
 void checkIfBombNeedsToBeActivated() {
-  if ((humidityValue < 717) && (waterBombActivationTimer == 0) && (releaux == 0) && (minimumDelayBetweenBombActivationTimer == 0)) {
-    digitalWrite(relePin, HIGH);
-    releaux = 1;
+  if ((humidityValue <= 717) && (waterBombActivationTimer <= 0) && (releaux == 0) && (minimumDelayBetweenBombActivationTimer <= 0)) {
+    activateBomb();
     waterBombActivationTimer = 30;
     minimumDelayBetweenBombActivationTimer = 800;
   }
@@ -141,4 +137,35 @@ void timerUpdate() {
   lcdUpdateTimer = lcdUpdateTimer - 1;
 }
 
+/**
+   Updates the LCD every 5 seconds (10 50ms cycles)
+*/
+void lcdUpdate() {
+  if (lcdUpdateTimer = 0) { // atualizar valor mostrador
+
+    LCD.begin(16, 2); //resolução do mostrador
+    lcd.setCursor(0, 0); //início
+    lcd.write("Hum:",  humidityPercentage, "% Light:", lightPercentage);
+
+    lcdUpdateTimer = 100;
+  }
+}
+
+/**
+   Deactivates the water bomb if the 1.5 seconds timer reaches 0 and the bomb is activated
+*/
+void deactivateBomb() {
+  if ((waterBombActivationTimer == 0) && (releaux == 1)) {
+    digitalWrite(relePin, LOW);
+    releaux = 0;
+  }
+}
+
+/**
+   Activates the water bomb
+*/
+void activateBomb() {
+  digitalWrite(relePin, HIGH);
+  releaux = 1;
+}
 
