@@ -2,6 +2,7 @@
 
 #include <Wire.h>
 #include <LCD.h>
+#include <DateTime.h>
 #include <LiquidCrystal_I2C.h>
 
 #define I2C_ADDR 0x27 //Define I2C Address where the PCF8574A is
@@ -76,7 +77,35 @@ int lcdUpdateTimer = 100;
 */
 double humidityPercentage;
 
+/**
+   The average time, in seconds, between each automated bomb activation
+*/
+double averageTimer = 0;
 
+/**
+   Number of 50ms cycles between each automated cycle, the counter resets when a manual bomb activation occurs
+*/
+int cyclesAverage = 0;
+
+/**
+   Index used to calculate the timer average
+*/
+int timerAverageIndex = 1;
+
+/**
+   Default value of delay between each iteration
+*/
+int defaultDelay = 50;
+
+/**
+ * The average humidity, in %
+ */
+double humidityGlobalAverage = 0;
+
+/**
+ * Index used to calculate the humidity average
+ */
+int humidityAverageIndex = 1;
 
 void setup() {
   pinMode(relePin, OUTPUT);
@@ -86,28 +115,31 @@ void loop() {
 
   humidityValue = analogRead(humiditySensorPin);
   lightValue = analogRead(lightSensorPin);
+
   buttonstate = digitalRead(buttonPin);
+
   humidityPercentage = (humidityValue * 100) / 1023;
   lightPercentage = (lightValue * 100) / 1023);
-  
+
   if (buttonState == 0) {
 
-    checkIfBombNeedsToBeActivated();
+  checkIfBombNeedsToBeActivated();
 
     lcdUpdate();
 
     deactivateBomb();
 
-    delay(50);
+    delay(defaultDelay);
 
     timerUpdate();
 
-
   } else { // Manual water bomb activation
 
-    activateBomb();
+    manualMode();
 
   }
+
+  calculateAverageHumidity();
 
 }
 
@@ -135,6 +167,8 @@ void timerUpdate() {
   }
 
   lcdUpdateTimer = lcdUpdateTimer - 1;
+
+  cyclesAverage = cyclesAverage + 1;
 }
 
 /**
@@ -143,7 +177,7 @@ void timerUpdate() {
 void lcdUpdate() {
   if (lcdUpdateTimer = 0) { // atualizar valor mostrador
 
-    LCD.begin(16, 2); //resolução do mostrador
+    lcd.begin(16, 2); //resolução do mostrador
     lcd.setCursor(0, 0); //início
     lcd.write("Hum:",  humidityPercentage, "% Light:", lightPercentage);
 
@@ -167,5 +201,29 @@ void deactivateBomb() {
 void activateBomb() {
   digitalWrite(relePin, HIGH);
   releaux = 1;
+}
+
+/**
+   Calculates the average time between each automated bomb activation
+*/
+void calculateAverageTime() {
+  averageTimer = (averageTimer * timerAverageIndex + cyclesAverage * defaultDelay) / (timerAverageIndex + 1);
+  timerAverageIndex = timerAverageIndex + 1;
+}
+
+/**
+   Manual mode
+*/
+void manualMode() {
+  activateBomb();
+  cyclesAverage = 0;
+}
+
+/**
+ * Calculates the average humidity value, in %
+ */
+void calculateAverageHumidity() {
+  humidityGlobalAverage = (humidityGlobalAverage * humidityAverageIndex + humidityPercentage) / (humidityAverageIndex + 1);
+  humidityAverageIndex = humidityAverageIndex + 1;
 }
 
