@@ -1,36 +1,18 @@
 
-
-#include <Wire.h>
-#include <LCD.h>
-#include <DateTime.h>
-#include <LiquidCrystal_I2C.h>
-
-#define I2C_ADDR 0x27 //Define I2C Address where the PCF8574A is
-
-#define BACKLIGHT_PIN 3
-#define En_pin 2
-#define Rw_pin 1
-#define Rs_pin 0
-#define D4_pin 4
-#define D5_pin 5
-#define D6_pin 6
-#define D7_pin 7
-
-
 /**
-   Light sensor, connected to the Analog Pin #2,, ranging from 0 to 1023 (10 bits)
+   Light sensor, connected to the Analog Pin #2,, ranging from 0 to 1023
 */
 int lightSensorPin = 2;
 
 /**
-   Humidity sensor, connected to the Analog Pin #1, ranging from 0 to 1023 (10 bits)
+   Humidity sensor, connected to the Analog Pin #1, ranging from 0 (wet) to 1023 (dry)
 */
 int humiditySensorPin = 1;
 
 /**
-   Rele, connected to the Digital Pin #1, ranging from 0 to 1
+   Rele, connected to the Digital Pin #10, ranging from 0 to 1
 */
-int relePin = 1;
+int relePin = 10;
 
 /**
    Manual button, connected to the Digital Pin #4, ranging from 0 to 1
@@ -53,6 +35,11 @@ int lightValue;
 int waterBombActivationTimer = 0;
 
 /**
+   Represents the default number of 50ms cycles the water bomb will be activated
+*/
+int waterBombActivationTimerDefault = 30; // 30 = 1,5s
+
+/**
    Variable containing the value from digitalRead(buttonPin)
 */
 int buttonState;
@@ -68,14 +55,23 @@ int releaux = 0;
 int minimumDelayBetweenBombActivationTimer = 0;
 
 /**
+   Default minimum required time between the water bomb activations
+*/
+int minimumDelayBetweenBombActivationTimerDefault = 1200; // 1200 = 1 min
+/**
    Timer to update the LCD
 */
-int lcdUpdateTimer = 100;
+int lcdUpdateTimer = 20;
 
 /**
    humidityValue converted to %
 */
 double humidityPercentage;
+
+/**
+   lightValue converted to %
+*/
+double lightPercentage;
 
 /**
    The average time, in seconds, between each automated bomb activation
@@ -90,7 +86,7 @@ int cyclesAverage = 0;
 /**
    Index used to calculate the timer average
 */
-int timerAverageIndex = 1;
+int timerAverageIndex = 0;
 
 /**
    Default value of delay between each iteration
@@ -98,17 +94,30 @@ int timerAverageIndex = 1;
 int defaultDelay = 50;
 
 /**
- * The average humidity, in %
- */
+   The average humidity, in %
+*/
 double humidityGlobalAverage = 0;
 
 /**
- * Index used to calculate the humidity average
- */
-int humidityAverageIndex = 1;
+   Index used to calculate the humidity average
+*/
+int humidityAverageIndex = 0;
+
+/**
+   Standard time it takes for the lcd to update (in # of 50ms cycles)
+*/
+int lcdStandardTimer = 12000; // 12000 = 10 mins
+
+/**
+   Minimum humidity desired for the plant (358 = ~65%)
+*/
+int minimumHumidityDesired = 358;
+
 
 void setup() {
   pinMode(relePin, OUTPUT);
+  pinMode(buttonPin, INPUT);
+  Serial.begin(9600);
 }
 
 void loop() {
@@ -116,14 +125,17 @@ void loop() {
   humidityValue = analogRead(humiditySensorPin);
   lightValue = analogRead(lightSensorPin);
 
-  buttonstate = digitalRead(buttonPin);
+  buttonState = digitalRead(buttonPin);
 
-  humidityPercentage = (humidityValue * 100) / 1023;
-  lightPercentage = (lightValue * 100) / 1023);
+  humidityPercentage = 1023 - humidityValue;
+  humidityPercentage = humidityPercentage * 100;
+  humidityPercentage = humidityPercentage / 1023;
+  lightPercentage = lightValue * 100;
+  lightPercentage = lightPercentage / 1023;
 
   if (buttonState == 0) {
 
-  checkIfBombNeedsToBeActivated();
+    checkIfBombNeedsToBeActivated();
 
     lcdUpdate();
 
@@ -147,10 +159,11 @@ void loop() {
    Activates the water bomb if the humidity percentage goes below 70% (717/1023 = 70%), the bomb is deactivated, the rele is deactivated and the count timer is 0
 */
 void checkIfBombNeedsToBeActivated() {
-  if ((humidityValue <= 717) && (waterBombActivationTimer <= 0) && (releaux == 0) && (minimumDelayBetweenBombActivationTimer <= 0)) {
+  if ((humidityValue > minimumHumidityDesired) && (waterBombActivationTimer <= 0) && (releaux == 0) && (minimumDelayBetweenBombActivationTimer <= 0)) {
     activateBomb();
-    waterBombActivationTimer = 30;
-    minimumDelayBetweenBombActivationTimer = 800;
+
+    waterBombActivationTimer = waterBombActivationTimerDefault;
+    minimumDelayBetweenBombActivationTimer = minimumDelayBetweenBombActivationTimerDefault;
   }
 }
 
@@ -172,16 +185,13 @@ void timerUpdate() {
 }
 
 /**
-   Updates the LCD every 5 seconds (10 50ms cycles)
+   Updates the LCD every 5 seconds (100 50ms cycles)
 */
 void lcdUpdate() {
-  if (lcdUpdateTimer = 0) { // atualizar valor mostrador
+  if (lcdUpdateTimer == 0) {
+    double totalTime = cyclesAverage * 50;
 
-    lcd.begin(16, 2); //resolução do mostrador
-    lcd.setCursor(0, 0); //início
-    lcd.write("Hum:",  humidityPercentage, "% Light:", lightPercentage);
-
-    lcdUpdateTimer = 100;
+    lcdUpdateTimer = lcdStandardTimer;
   }
 }
 
@@ -199,16 +209,20 @@ void deactivateBomb() {
    Activates the water bomb
 */
 void activateBomb() {
+  double totalTime = cyclesAverage * 50;
+
   digitalWrite(relePin, HIGH);
   releaux = 1;
+  calculateAverageTime();
+  cyclesAverage = 0;
 }
 
 /**
    Calculates the average time between each automated bomb activation
 */
 void calculateAverageTime() {
-  averageTimer = (averageTimer * timerAverageIndex + cyclesAverage * defaultDelay) / (timerAverageIndex + 1);
   timerAverageIndex = timerAverageIndex + 1;
+  averageTimer = (averageTimer * timerAverageIndex + cyclesAverage * defaultDelay) / (timerAverageIndex + 1);
 }
 
 /**
@@ -220,10 +234,11 @@ void manualMode() {
 }
 
 /**
- * Calculates the average humidity value, in %
- */
+   Calculates the average humidity value, in %
+*/
 void calculateAverageHumidity() {
-  humidityGlobalAverage = (humidityGlobalAverage * humidityAverageIndex + humidityPercentage) / (humidityAverageIndex + 1);
   humidityAverageIndex = humidityAverageIndex + 1;
+  humidityGlobalAverage = (humidityGlobalAverage * humidityAverageIndex + humidityPercentage) / (humidityAverageIndex + 1);
 }
+
 
