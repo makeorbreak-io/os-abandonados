@@ -302,15 +302,7 @@ void loop() {
 
     checkIfBombNeedsToBeActivated();
 
-    // lcdUpdate();
-
-
     deactivateBomb();
-
-
-    //delay(defaultDelay);
-
-    //timerUpdate();
 
   } else if (buttonState == 1) { // On button press
 
@@ -514,19 +506,10 @@ void calculateAverageTime() {
    Manual mode
 */
 void lcdManualMode() {
-  // manualModeCurrentIndex = manualModeCurrentIndex + 1;
-
-  /*lcd.setRGB(58, 44, 86);
-    lcd.clear();
-    lcd.setCursor(2, 0);
-    lcd.print("Manual Mode");*/
 
   countDown();
 
   if (manualModeCurrentIndex >= manualModeDefaultIndex) {
-    activateBomb();
-    cyclesAverage = 0;
-    waterBombActivationTimer = 0;
 
     lcd.setRGB(100, 65, 0);
     lcd.clear();
@@ -534,6 +517,10 @@ void lcdManualMode() {
     lcd.print("Manual Mode");
     lcd.setCursor(2, 1);
     lcd.print("Press to Stop");
+
+    activateBomb();
+    cyclesAverage = 0;
+    waterBombActivationTimer = 0;
   }
 }
 
