@@ -39,7 +39,7 @@ int waterBombActivationTimer = 0;
 /**
    Represents the default number of 50ms cycles the water bomb will be activated
 */
-int waterBombActivationTimerDefault = 30; // 30 = 1,5s
+int waterBombActivationTimerDefault = 60; // 60 = 3s
 
 /**
    Variable containing the value from digitalRead(buttonPin)
@@ -59,7 +59,7 @@ int minimumDelayBetweenBombActivationTimer = 0;
 /**
    Default minimum required time between the water bomb activations
 */
-int minimumDelayBetweenBombActivationTimerDefault = 1200; // 1200 = 1 min
+int minimumDelayBetweenBombActivationTimerDefault = 12000; // 12000 = 10 min
 
 /**
    Timer to update the LCD
@@ -112,9 +112,9 @@ int humidityAverageIndex = 0;
 int lcdStandardTimer = 10; // 10 = 0.5 sec
 
 /**
-   Minimum humidity desired for the plant (310= ~70%)
+   Minimum humidity desired for the plant (310 = ~70%, 358 = ~65%)
 */
-int minimumHumidityDesired = 310;
+int minimumHumidityDesired = 358;
 
 /**
   The current menu index
@@ -397,7 +397,7 @@ void lcdUpdate() {
 */
 void lcdHumidityMenu() {
 
-  if (humidityPercentage > 70) {
+  if (humidityPercentage > 65) {
     colorR = 0;
     colorG = 255;
     colorB = 0;
@@ -441,17 +441,17 @@ void lcdMessageAndColorLight(String aspect, int start, String state) {
 */
 void lcdLightMenu() {
   String state;
-  if (lightValue > 600) {
+  if (lightValue > 250) {
     colorR = 0;
     colorG = 255;
     colorB = 0;
     state = "Good";
-  } else if (lightValue <= 600 && lightValue > 300) {
+  } else if (lightValue <= 250 && lightValue > 50) {
     colorR = 255;
     colorG = 255;
     colorB = 0;
     state = "Medium";
-  } else if (lightValue <= 300) {
+  } else if (lightValue <= 50) {
     colorR = 255;
     colorG = 0;
     colorB = 0;
