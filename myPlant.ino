@@ -2,7 +2,7 @@
 #include <rgb_lcd.h>
 
 /**
-   Light sensor, connected to the Analog Pin #2,, ranging from 0 to 1023
+   Light sensor, connected to the Analog Pin #2,, ranging from 0(dark) to 1023
 */
 int lightSensorPin = 2;
 
@@ -84,7 +84,7 @@ double averageTimer = 0;
 /**
    Number of 50ms cycles between each automated cycle, the counter resets when a manual bomb activation occurs
 */
-int cyclesAverage = 0;
+long cyclesAverage = 0;
 
 /**
    Index used to calculate the timer average
@@ -104,7 +104,7 @@ double humidityGlobalAverage = 0;
 /**
    Index used to calculate the humidity average
 */
-int humidityAverageIndex = 0;
+long humidityAverageIndex = 0;
 
 /**
    Standard time it takes for the lcd to update (in # of 50ms cycles)
